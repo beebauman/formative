@@ -14,15 +14,14 @@ Formative is a wise and gentle shepherd, guiding form fillers toward the all-imp
 
 ## Getting started
 
-Here's a really simple example. You should also check out the extensive example *** somewhere ***.
+Here's a really simple example. You should also check out the extensive example [somewhere].
 
-...Simple form example...
+[Simple form example]
 
 ## Prerequisites
 
-Formative requires jQuery 1.10.2 or above. I haven't tested it with older versions.
-
-FastClick.
+- jQuery
+- FastClick ?
 
 ## Features
 
@@ -38,7 +37,7 @@ You can also have optional fields.
 
 ### Real-time validity feedback
 
-Formative responds to changes in field validity in real-time, keeping the user aware of input validity as they type, using obvious but unobstrusive visual cues.
+Formative responds to changes in field validity in real-time, keeping the user aware of input validity as they type, using obvious but unobtrusive visual cues.
 
 You can use the default cue styles or specify your own.
 
@@ -67,7 +66,7 @@ Because it has a better accuracy rate, we use IP address to determine location, 
 
 The actual fill event happens the first time the user focuses on a field. We delay for an instant, just long enough to be noticed, and then we pleasantly surprise them by filling in the value with a gentle yet playful animation. If we've simply inserted a helpful prefix, our work is done. If we've filled the complete field, we hop over and move focus to the next field after another tiny delay.
 
-Technical notes: The IP-based autofill feature uses the [WIPmania API](https://www.wipmania.com/en/api/) for gelocation and reverse geocoding. Formative includes its own JSON file containing E.164 country calling code information, which we coverted from an XML list found at <https://code.google.com/p/country-phone-codes>.
+Technical notes: The IP-based autofill feature uses the [WIPmania API](https://www.wipmania.com/en/api/) for geolocation and reverse geocoding. Formative includes its own JSON file containing E.164 country calling code information, which we converted from an XML list found at <https://code.google.com/p/country-phone-codes>.
 
 ### Word counting
 

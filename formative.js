@@ -5,13 +5,10 @@
 ======================================================================== */
 
 
-/* === Debug logging. === */
-
-// Turn debug logging on (1) or off (0).
-var DEBUG = 1;
-
-
 /* === User configurable options. === */
+
+// Enable or disable debug logging.
+var DEBUG = 1;
 
 // CSS classes for validity styles. Replace if desired.
 var classForValidField             = 'formative-valid';               // If you use your own class, limit rule to :focus
@@ -19,65 +16,64 @@ var classForInvalidField           = 'formative-invalid';             // If you 
 var classForInvalidFieldPersistent = 'formative-invalid-persistent';
 var classForValidText              = 'formative-text-valid';
 var classForInvalidText            = 'formative-text-invalid';
-var classForErrorMessage              = 'formative-text-error';
+var classForErrorMessage           = 'formative-text-error';
 
 // Animation options.
 var scrollToTopmostErrorOnSubmitAnimationDuration   = 600;
 var wordCounterShowHideAnimationDuration            = 400;
-var showHiddenAutoFilledFormGroupAnimationDuration  = 300;
-var defaultAutoAdvanceDelay                         = 250;
-var defaultAutoFillDelay                            = 150;
-
-// Profix for the number of words used in word counters.
-var wordCounterCountPrefix = 'Word count: ';
+var showHiddenAutoFilledFormGroupAnimationDuration  = 350;
+var defaultAutoAdvanceDelay                         = 100;
+var defaultAutoFillDelay                            = 200;
 
 // IP-based AutoFill options.
-var autoFillCountryDialCode = true;
-var phoneNumberFieldId = 'phone_number';
-var autoFillAddressCountry = true;
-var countryFieldId = 'country';
+var autoFillCountryDialCode   = true;
+var autoFillAddressCountry    = true;
 var autoFillCityStateAfterZip = true;
 var onlyShowStateCityAfterZip = true;
-var zipFieldId = 'zip';
-var cityFieldId = 'city';
-var stateFieldId = 'state';
+var phoneNumberFieldId        = 'phone_number';
+var countryFieldId            = 'country';
+var zipFieldId                = 'zip';
+var cityFieldId               = 'city';
+var stateFieldId              = 'state';
 
 // Selector for elements that Formative validates, and exceptions.
-  var elementsToValidateSelector = 'input, textarea';
+var elementsToValidateSelector           = 'input, textarea';
 var elementsToValidateExceptionsSelector = "[type='file']";
 
 var validationEvents = 'input propertychange focus';
-/* var validationEvents = 'focus change keyup keydown paste input textinput delete drop redo undo'; */
+/* var validationEvents = 'input textinput focus change keyup keydown paste delete drop redo undo'; */
 
 
 /* === Internal parameters. === */
 
 // CSS classes that activate specific Formative features.
-var classForFormGroup = 'form-group';
-var classForMultiFields = 'multi-field';
+var classForFormGroup        = 'form-group';
+var classForMultiFields      = 'multi-field';
 var classForWordCountedField = 'word-counted';
 
 // Data attribute names in JavaScript format.
-var minWordsAttribute                = 'formativeMinWords';
-var maxWordsAttribute                = 'formativeMaxWords';
-var wordCountPrefixAttribute         = 'formativeWordCountPrefix'
-var functionAttribute                = 'formativeFunction';
-var patternAttribute                 = 'formativePattern';
-var typeAttribute                    = 'formativeType';
-var requiredAttribute                = 'formativeRequired';
-var hopAttribute                     = 'formativeHop';
-var keyboardAttribute                = 'formativeKeyboard';
-var errorAttribute                   = 'formativeError';
-var autoAdvanceAttribute             = 'formativeAutoAdvance';
-var hasBeenAdvancedAttribute         = 'formativeHasBeenAdvanced'
+var minWordsAttribute          = 'formativeMinWords';
+var maxWordsAttribute          = 'formativeMaxWords';
+var wordCountPrefixAttribute   = 'formativeWordCountPrefix'
+var functionAttribute          = 'formativeFunction';
+var backspaceFunctionAttribute = 'formativeBackspaceFunction';
+var patternAttribute           = 'formativePattern';
+var typeAttribute              = 'formativeType';
+var requiredAttribute          = 'formativeRequired';
+var hopAttribute               = 'formativeHop';
+var keyboardAttribute          = 'formativeKeyboard';
+var errorAttribute             = 'formativeError';
+var autoAdvanceAttribute       = 'formativeAutoAdvance';
+var hasBeenAdvancedAttribute   = 'formativeHasBeenAdvanced'
 
 // URL for E.164 country code list.
 var countryDataUrl = 'http://www.newtonacademy.org/fw/formative/e164-country-codes.json';
 
+// Test for iOS device.
 var deviceIsIOS = /iP(ad|hone|od)/.test(navigator.userAgent);
 
 
-/* === INTERNAL FUNCTIONS. === */
+/* === Internal functions. === */
 
 
 /* === Debugging. === */
@@ -104,7 +100,7 @@ function htmlNameOfDataAttribute (attribute) {
 /* === Convienience. === */
 
 function isDefined (value) {
-  return typeof value !== 'undefined';
+  return ( typeof value !== 'undefined' ) && ( "" + value !== "" ) ;
 }
 
 function fieldHasAttribute (field, attribute) {
@@ -152,7 +148,7 @@ function fieldIsValid (field) {
       validity = true;
     } else {
       wordCount = wordCountForField(field);
-      if ( ( wordCount > minWords || minWords == 0 ) && ( wordCount < maxWords || maxWords == 0 )  )
+      if ( ( wordCount >= minWords || minWords == 0 ) && ( wordCount <= maxWords || maxWords == 0 )  )
         validity = true; else validity = false;
     }
 
@@ -161,7 +157,7 @@ function fieldIsValid (field) {
   
   } else if ( fieldHasAttribute(field, functionAttribute) ) {
     var customFunction = field.data(functionAttribute);
-    validity = customFunction(field);
+    validity = window[customFunction](field);
   
   
   /* === Fields validated by pattern. === */
@@ -235,6 +231,60 @@ function applyValidationStyleToField (field, options) {
 }
 
 
+/* === Custom validation function for joint country code and phone number field. === */
+
+function validateJointPhoneNumberField (field) {
+  
+  // Strip non-numeric characters from the field's value
+  value = field.val().replace(/\D/g,'');
+  if ( ! isDefined(value) ) return false;
+  
+  // Create a variable to store the index of the character after the country code
+  var slicePosition = 0;
+  debugLog("hello");
+  
+  // Loop through our country codes and see if our value begins with one of them
+  for ( var i in countryDataJSON.countries ) {
+    var currentCountryCode = countryDataJSON.countries[i]['phoneCode'];
+    if ( value.charAt(0) == currentCountryCode )
+      slicePosition = 1;
+    else if ( value.slice(0,2) == currentCountryCode )
+      slicePosition = 2;
+    else if ( value.slice(0,3) == currentCountryCode )
+      slicePosition = 3;
+  }
+  
+  // If the splice position is still zero, our value doesn't begin with a country code and is therefore invalid
+  if ( slicePosition == 0 ) {
+    field.val("+ " + value);
+    return false;
+  
+  // If the splice position was set, we found our country code!
+  } else {
+    var countryCode = value.slice(0, slicePosition);
+    var phoneNumber = value.slice(slicePosition);
+    
+    // Format the field appropriately
+    
+    if ( phoneNumber.length >= 7 )
+      phoneNumber = [phoneNumber.slice(0, 3), "-", phoneNumber.slice(3,6), "-", phoneNumber.slice(6)].join('');
+    else if ( phoneNumber.length > 3 && phoneNumber.length < 7 )
+      phoneNumber = [phoneNumber.slice(0, 3), "-", phoneNumber.slice(3)].join('');
+          
+    if ( phoneNumber.length > 0 )
+      field.val("+ " + [countryCode, "-", phoneNumber].join('') );
+    else
+      field.val("+ " + countryCode );
+        
+    // If the phone number portion is longer than five digits,the field is valid
+    if ( phoneNumber.replace(/\D/g,'').length > 5 )
+      return true;
+    else
+      return false;
+  }    
+}
+
+
 /* === Word counting. === */
 
 function fieldIsValidatedByWordCount (field) {
@@ -264,6 +314,7 @@ function wordCountForField (field) {
 }
 
 function updateWordCounterForField (field) {
+  var wordCounterCountPrefix = field.data(wordCountPrefixAttribute);
   var count = wordCountForField(field);
   var valid = fieldIsValid(field);
   var counter = $('#' + field.attr('id') + '-count');
@@ -378,25 +429,29 @@ function shouldLoadGeocodingData () {
   return ( autoFillAddressCountry || autoFillCountryDialCode || autoFillCityStateAfterZip );
 }
 
+var countryDataJSON;
+
 if ( shouldLoadGeocodingData() ) {
   
   // Load the JSON object that maps countries to country dialing codes.
   $.getJSON(countryDataUrl, function(json) {
     
+    countryDataJSON = json;
+    
     // Get the user's country based on IP address from an API.
-    $.getJSON('http://api.wipmania.com/jsonp?callback=?', function (data) { 
+    $.getJSON('http://freegeoip.net/json/', function (data) { 
     
       // Store the two letter country code from the API's response.
-      countryLetterCode = data.address.country_code;
+      countryLetterCode = data.country_code;
       
       // Later, we'll need country TLD for the Google geocoding API. Country TLD is the same as the 2 letter country code, with the only notable exception being Great Britian.
       countryTld = ( countryLetterCode == 'gb' ) ? 'uk' : countryLetterCode;
 
-      if ( isDefined(countryLetterCode) && countryLetterCode.length == 2 ) {
+      if ( isDefined(countryLetterCode) && countryLetterCode.length == 2 && countryLetterCode != 'XX' ) {
         
         // Find the user's country in our JSON object.
-        for ( var i in json.countries ) {
-          var countryData = json.countries[i];
+        for ( var i in countryDataJSON.countries ) {
+          var countryData = countryDataJSON.countries[i];
           if ( countryData['code'].toUpperCase() === countryLetterCode.toUpperCase() ) {
             country = countryData['name'];
             countryCallingCode = countryData['phoneCode'];
@@ -413,7 +468,7 @@ if ( shouldLoadGeocodingData() ) {
         
         if ( autoFillCountryDialCode ) {
           $(document).ready(function () {
-            tellFieldToAutoFillValueWhenFocused($('#' + phoneNumberFieldId), '+' + countryCallingCode + ' - ');
+            tellFieldToAutoFillValueWhenFocused($('#' + phoneNumberFieldId), countryCallingCode);
           });
         }
 
@@ -467,26 +522,26 @@ if ( shouldLoadGeocodingData() ) {
                     tellFieldToAutoFillValueWhenFocused($('#' + cityFieldId), city, {advanceToNextField: true});
                   }
                                     
-                  if ( state == '' ) $('#' + stateFieldId).trigger('forceFocus');
-                  if ( city == '' ) $('#' + cityFieldId).trigger('forceFocus');
+                  if ( ! isDefined(state) ) $('#' + stateFieldId).trigger('forceFocus');
+                  if ( ! isDefined(city)  ) $('#' + cityFieldId).trigger('forceFocus');
 
-                }); /* === $.getJSON('http://maps.googleapis.com..., function(json) { === */
+                });
                 
-              } /* === if ( isDefined(zip) && zip.length > 0 ) { === */
+              }
               
-            }); /* === $('#' + zipFieldId).on('blur', function (event) { === */
+            });
             
-          }); /* === $(document).ready(function () { === */
+          });
           
-        } /* === if ( autoFillCityStateAfterZip ) { === */
+        }
         
-      } /* === if ( isDefined(countryLetterCode) && countryLetterCode.length == 2 ) { === */
-      
-    }); /* === $.getJSON('http://api.wipmania.com/jsonp?callback=?', function (data) { === */
+      }
+
+    });
     
-  }); /* === $.getJSON(countryDataUrl, function(json) { === */
+  });
   
-} /* === if ( shouldLoadGeocodingData() ) { === */
+}
 
 
 /* === Primary document.ready handler. === */
@@ -511,8 +566,13 @@ $(document).ready(function () {
          ! fieldHasAttribute($(field), typeAttribute)        )
       $(field).data(patternAttribute) = '.+';
     
-    // *** Set pattern for fields set with a data-formative-type... ***
-    
+    if ( fieldHasAttribute($(field), backspaceFunctionAttribute) )
+      $(field).keyup(function(e){
+        var customBackspaceFunction = $(field).data(backspaceFunctionAttribute);
+        if ( e.keyCode == 8 )
+          window[customBackspaceFunction]($(field));
+      });
+        
     // If the field is supposed to auto-advance when it becomes valid, set a state flag so we'll be able to only advance one time.
     if ( fieldHasAttribute($(field), autoAdvanceAttribute) )
       $(field).data(hasBeenAdvancedAttribute, false);
@@ -533,6 +593,7 @@ $(document).ready(function () {
   
   // For each word counted field, add a word counter to the document, and set it to show and hide when the counted field goes into and out of focus.
   $('.' + classForWordCountedField).each(function(index, countedDiv){
+    var wordCounterCountPrefix = $(countedDiv).data(wordCountPrefixAttribute);
     var counterDivId = $(this).attr('id') + '-count';
     $(countedDiv).after('<div class="em" id="' + counterDivId + '">' + wordCounterCountPrefix + '0</div>')
     var counterDiv = $('#' + counterDivId);
@@ -587,4 +648,4 @@ $(document).ready(function () {
   });
   
     
-}); /* === End of primary document.ready handler. === */
+});
